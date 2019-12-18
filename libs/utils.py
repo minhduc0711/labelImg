@@ -79,11 +79,22 @@ def fmtShortcut(text):
 
 def generateColorByText(text):
     s = ustr(text)
-    hashCode = int(hashlib.sha256(s.encode('utf-8')).hexdigest(), 16)
-    r = int((hashCode / 255) % 255)
-    g = int((hashCode / 65025)  % 255)
-    b = int((hashCode / 16581375)  % 255)
-    return QColor(r, g, b, 100)
+    if text == "good_corn":
+        r,g,b = 102, 255, 51 
+    elif text == "broken_corn":
+        r,g,b = 153, 0, 204
+    elif text == "foreign_material":
+        r,g,b = 153, 102, 0 
+    elif text == "damaged_heat":
+        r,g,b = 255, 102, 0
+    elif text == "damaged_mold":
+        r,g,b = 0, 204, 255 
+    else:
+        hashCode = int(hashlib.sha256(s.encode('utf-8')).hexdigest(), 16)
+        r = int((hashCode / 255) % 255)
+        g = int((hashCode / 65025)  % 255)
+        b = int((hashCode / 16581375)  % 255)
+    return QColor(r, g, b, 200)
 
 def have_qstring():
     '''p3/qt5 get rid of QString wrapper as py3 has native unicode str type'''
