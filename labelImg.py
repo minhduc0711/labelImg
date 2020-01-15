@@ -46,6 +46,8 @@ from libs.yolo_io import TXT_EXT
 from libs.ustr import ustr
 from libs.hashableQListWidgetItem import HashableQListWidgetItem
 
+from yolov3_ultralytics.detect import detect_yolo_annotations, load_model, archs
+
 __appname__ = 'labelImg'
 
 class WindowMixin(object):
@@ -73,6 +75,10 @@ class MainWindow(QMainWindow, WindowMixin):
     def __init__(self, defaultFilename=None, defaultPrefdefClassFile=None, defaultSaveDir=None):
         super(MainWindow, self).__init__()
         self.setWindowTitle(__appname__)
+        
+        # Model for AI assist
+        self.ai_assist_enabled = True
+        self.model = None
 
         # Load setting in the main thread
         self.settings = Settings()
@@ -1054,6 +1060,7 @@ class MainWindow(QMainWindow, WindowMixin):
 
             # Label xml file and show bound box according to its filename
             # if self.usingPascalVocFormat is True:
+            labels_exist = False
             if self.defaultSaveDir is not None:
                 basename = os.path.basename(
                     os.path.splitext(self.filePath)[0])
@@ -1064,17 +1071,30 @@ class MainWindow(QMainWindow, WindowMixin):
                 PascalXML > YOLO
                 """
                 if os.path.isfile(xmlPath):
-                    self.loadPascalXMLByFilename(xmlPath)
+                    labels_exist = labels_exist or self.loadPascalXMLByFilename(xmlPath)
                 elif os.path.isfile(txtPath):
-                    self.loadYOLOTXTByFilename(txtPath)
+                    labels_exist = labels_exist or self.loadYOLOTXTByFilename(txtPath)
             else:
                 xmlPath = os.path.splitext(filePath)[0] + XML_EXT
                 txtPath = os.path.splitext(filePath)[0] + TXT_EXT
                 if os.path.isfile(xmlPath):
-                    self.loadPascalXMLByFilename(xmlPath)
+                    labels_exist = labels_exist or self.loadPascalXMLByFilename(xmlPath)
                 elif os.path.isfile(txtPath):
-                    self.loadYOLOTXTByFilename(txtPath)
-
+                    labels_exist = labels_exist or self.loadYOLOTXTByFilename(txtPath)
+                    
+            # AI-assist
+            if self.ai_assist_enabled and not labels_exist:
+                if self.model is None:
+                    self.initModel()
+                shapes = detect_yolo_annotations(self.model,
+                                                 unicodeFilePath,
+                                                 self.img_size,
+                                                 self.labelHist,
+                                                 device=self.device)
+                
+                self.loadLabels(shapes)
+                self.setDirty() 
+            
             self.setWindowTitle(__appname__ + ' ' + filePath)
 
             # Default : select last item if there is at least one item
@@ -1442,10 +1462,8 @@ class MainWindow(QMainWindow, WindowMixin):
                         self.labelHist.append(line)
 
     def loadPascalXMLByFilename(self, xmlPath):
-        if self.filePath is None:
-            return
-        if os.path.isfile(xmlPath) is False:
-            return
+        if self.filePath is None or not os.path.isfile(xmlPath):
+            return False
 
         self.set_format(FORMAT_PASCALVOC)
 
@@ -1453,12 +1471,11 @@ class MainWindow(QMainWindow, WindowMixin):
         shapes = tVocParseReader.getShapes()
         self.loadLabels(shapes)
         self.canvas.verified = tVocParseReader.verified
+        return True
 
     def loadYOLOTXTByFilename(self, txtPath):
-        if self.filePath is None:
-            return
-        if os.path.isfile(txtPath) is False:
-            return
+        if self.filePath is None and not os.path.isfile(txtPath):
+            return False
 
         self.set_format(FORMAT_YOLO)
         tYoloParseReader = YoloReader(txtPath, self.image)
@@ -1466,6 +1483,7 @@ class MainWindow(QMainWindow, WindowMixin):
         print (shapes)
         self.loadLabels(shapes)
         self.canvas.verified = tYoloParseReader.verified
+        return True
 
     def togglePaintLabelsOption(self):
         for shape in self.canvas.shapes:
@@ -1473,6 +1491,13 @@ class MainWindow(QMainWindow, WindowMixin):
 
     def toogleDrawSquare(self):
         self.canvas.setDrawingShapeToSquare(self.drawSquaresOption.isChecked())
+        
+    def initModel(self):
+        self.device = "cpu"
+        cfg_path = "yolov3_ultralytics/my_cfg/yolov3-tiny-corn.cfg"
+        weights_path = "yolov3_ultralytics/backup/yolov3-tiny-corn-608_best.weights"
+        self.img_size = 608
+        self.model = load_model(cfg_path, weights_path, self.img_size, self.device)
 
 def inverted(color):
     return QColor(*[255 - v for v in color.getRgb()])
