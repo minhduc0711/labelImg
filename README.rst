@@ -1,6 +1,6 @@
 LabelImg
 ========
-## **REMEMBER TO DO THIS**: exiftran -ai *.jpeg
+**REMEMBER TO DO THIS TO FIX IPHONES' JPG ORIENTATION**: :code:`exiftran -ai *.jpeg`
 
 .. image:: https://img.shields.io/pypi/v/labelimg.svg
         :target: https://pypi.python.org/pypi/labelimg
@@ -19,16 +19,14 @@ It is written in Python and uses Qt for its graphical interface.
 Annotations are saved as XML files in PASCAL VOC format, the format used
 by `ImageNet <http://www.image-net.org/>`__.  Besides, it also supports YOLO format
 
-.. image:: https://raw.githubusercontent.com/tzutalin/labelImg/master/demo/demo3.jpg
-     :alt: Demo Image
-
-.. image:: https://raw.githubusercontent.com/tzutalin/labelImg/master/demo/demo.jpg
-     :alt: Demo Image
-
 `Watch a demo video <https://youtu.be/p0nR2YsCY_U>`__
 
 Installation
-------------------
+------------
+
+Optional
+~~~~~~~~
+Run :code:`./get_yolo_weights.sh` to download YOLOv3 weights, which is required to enable AI assist feature.
 
 
 Build from source
