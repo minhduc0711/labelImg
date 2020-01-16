@@ -239,6 +239,9 @@ class MainWindow(QMainWindow, WindowMixin):
 
         saveAs = action(getStr('saveAs'), self.saveFileAs,
                         'Ctrl+Shift+S', 'save-as', getStr('saveAsDetail'), enabled=False)
+        
+        toggle_ai_assist = action(getStr('toggleAIAssist'), self.toggle_AI_assist, 
+                                  None, 'ai_enabled', getStr('toggleAIAssistDetail'))
 
         close = action(getStr('closeCur'), self.closeFile, 'Ctrl+W', 'close', getStr('closeCurDetail'))
 
@@ -337,6 +340,7 @@ class MainWindow(QMainWindow, WindowMixin):
 
         # Store actions for further handling.
         self.actions = struct(save=save, save_format=save_format, saveAs=saveAs, open=open, close=close, resetAll = resetAll,
+                              toggle_ai_assist=toggle_ai_assist,
                               lineColor=color1, create=create, delete=delete, edit=edit, copy=copy,
                               createMode=createMode, editMode=editMode, advancedMode=advancedMode,
                               shapeLineColor=shapeLineColor, shapeFillColor=shapeFillColor,
@@ -402,7 +406,7 @@ class MainWindow(QMainWindow, WindowMixin):
 
         self.tools = self.toolbar('Tools')
         self.actions.beginner = (
-            open, opendir, changeSavedir, openNextImg, openPrevImg, verify, save, save_format, None, create, copy, delete, None,
+            open, opendir, changeSavedir, openNextImg, openPrevImg, verify, save, save_format, toggle_ai_assist, None, create, copy, delete, None,
             zoomIn, zoom, zoomOut, fitWindow, fitWidth)
 
         self.actions.advanced = (
@@ -498,11 +502,35 @@ class MainWindow(QMainWindow, WindowMixin):
             # Draw rectangle if Ctrl is pressed
             self.canvas.setDrawingShapeToSquare(True)
 
-    ## Support Functions ##
-    # TODO: add a method to toggle AI-assist
-    def toggleAI(self):
-        pass
+    # AI assist stuffs
+    def initModel(self):
+        cfg_path = "yolov3_ultralytics/my_cfg/yolov3-tiny-corn.cfg"
+        weights_path = "yolov3_ultralytics/backup/yolov3-tiny-corn-608_best.weights"
+        
+        self.img_size = 608
+        self.device = "cpu"
+        self.model = load_model(cfg_path, weights_path, self.img_size, self.device)
+        
+    def predict_labels(self):
+        if self.model is None:
+            self.initModel()
+        shapes = detect_yolo_annotations(self.model,
+                                         self.filePath,
+                                         self.img_size,
+                                         self.labelHist,
+                                         device=self.device)
+        self.loadLabels(shapes)
+        self.setDirty() 
+        
+    def toggle_AI_assist(self):
+        self.ai_assist_enabled = not self.ai_assist_enabled
+        if self.ai_assist_enabled:
+            self.actions.toggle_ai_assist.setIcon(newIcon("ai_enabled"))
+            self.predict_labels()
+        else:
+            self.actions.toggle_ai_assist.setIcon(newIcon("ai_disabled"))
     
+    ## Support Functions ##
     def set_format(self, save_format):
         if save_format == FORMAT_PASCALVOC:
             self.actions.save_format.setText(FORMAT_PASCALVOC)
@@ -1089,16 +1117,7 @@ class MainWindow(QMainWindow, WindowMixin):
                     
             # AI-assist
             if self.ai_assist_enabled and not labels_exist:
-                if self.model is None:
-                    self.initModel()
-                shapes = detect_yolo_annotations(self.model,
-                                                 unicodeFilePath,
-                                                 self.img_size,
-                                                 self.labelHist,
-                                                 device=self.device)
-                
-                self.loadLabels(shapes)
-                self.setDirty() 
+                self.predict_labels()
             
             self.setWindowTitle(__appname__ + ' ' + filePath)
 
@@ -1497,12 +1516,6 @@ class MainWindow(QMainWindow, WindowMixin):
     def toogleDrawSquare(self):
         self.canvas.setDrawingShapeToSquare(self.drawSquaresOption.isChecked())
         
-    def initModel(self):
-        self.device = "cpu"
-        cfg_path = "yolov3_ultralytics/my_cfg/yolov3-tiny-corn.cfg"
-        weights_path = "yolov3_ultralytics/backup/yolov3-tiny-corn-608_best.weights"
-        self.img_size = 608
-        self.model = load_model(cfg_path, weights_path, self.img_size, self.device)
 
 def inverted(color):
     return QColor(*[255 - v for v in color.getRgb()])
