@@ -34,5 +34,7 @@
 <file alias="strings">resources/strings/strings.properties</file>
 <file alias="strings-zh-TW">resources/strings/strings-zh-TW.properties</file>
 <file alias="strings-zh-CN">resources/strings/strings-zh-CN.properties</file>
+<file alias="ai_enabled">resources/icons/ai_enabled.svg</file>
+<file alias="ai_disabled">resources/icons/ai_disabled.svg</file>
 </qresource>
 </RCC>
