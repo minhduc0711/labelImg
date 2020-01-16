@@ -91,8 +91,8 @@ class MainWindow(QMainWindow, WindowMixin):
 
         # Save as Pascal voc xml
         self.defaultSaveDir = defaultSaveDir
-        self.usingPascalVocFormat = True
-        self.usingYoloFormat = False
+        self.usingPascalVocFormat = False
+        self.usingYoloFormat = True
 
         # For loading all image under a directory
         self.mImgList = []
@@ -234,8 +234,8 @@ class MainWindow(QMainWindow, WindowMixin):
         save = action(getStr('save'), self.saveFile,
                       'Ctrl+S', 'save', getStr('saveDetail'), enabled=False)
 
-        save_format = action('&PascalVOC', self.change_format,
-                      'Ctrl+', 'format_voc', getStr('changeSaveFormat'), enabled=True)
+        save_format = action('&YOLO', self.change_format,
+                      'Ctrl+', 'format_yolo', getStr('changeSaveFormat'), enabled=True)
 
         saveAs = action(getStr('saveAs'), self.saveFileAs,
                         'Ctrl+Shift+S', 'save-as', getStr('saveAsDetail'), enabled=False)
@@ -499,6 +499,10 @@ class MainWindow(QMainWindow, WindowMixin):
             self.canvas.setDrawingShapeToSquare(True)
 
     ## Support Functions ##
+    # TODO: add a method to toggle AI-assist
+    def toggleAI(self):
+        pass
+    
     def set_format(self, save_format):
         if save_format == FORMAT_PASCALVOC:
             self.actions.save_format.setText(FORMAT_PASCALVOC)
@@ -517,6 +521,7 @@ class MainWindow(QMainWindow, WindowMixin):
     def change_format(self):
         if self.usingPascalVocFormat: self.set_format(FORMAT_YOLO)
         elif self.usingYoloFormat: self.set_format(FORMAT_PASCALVOC)
+        self.setDirty()
 
     def noShapes(self):
         return not self.itemsToShapes
